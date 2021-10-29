@@ -6,10 +6,6 @@
 #include <algorithm>
 #include <cctype>
 
-// 8.5.10: Write plus(), minus(), multiply(), and divide() functions that check for possible overflow and underflow and throw exceptions if such errors happen
-
-// 8.5.11: Modify the calculator to use the above functions
-
 using namespace std;
 
 // Interfaces
@@ -287,6 +283,5 @@ int main() {
       cout << "Integer Overflow detected!\n";
     }
   }
-
   return Errors::no_of_errors;
 }
