@@ -6,9 +6,7 @@
 #include <algorithm>
 #include <cctype>
 
-// 8.5.9: Modify the desk calculator to use exceptions. Keep a record of the mistakes you make. Suggest ways of avoiding such mistakes in the future
-
-// 8.5.10: Write plus(), minus(), multiply(), and divide() functions that check for possible overflow and underflow and that throw exceptions if such errors happen
+// 8.5.10: Write plus(), minus(), multiply(), and divide() functions that check for possible overflow and underflow and throw exceptions if such errors happen
 
 // 8.5.11: Modify the calculator to use the above functions
 
@@ -43,6 +41,7 @@ namespace SymbolTable {
 
 namespace Errors {
   struct Divide_By_Zero { };
+  struct Overflow_Or_Underflow { };
   struct Syntax_Error {
     std::string message;
     Syntax_Error(std::string msg) {
@@ -108,7 +107,6 @@ namespace Lexer {
         return curr_tok=PRINT;
     }
   }
-
 }
 
 // Implementation
@@ -119,10 +117,14 @@ namespace Parser {
     for(;;) {
       switch (Lexer::curr_tok) {
         case Lexer::PLUS:
-          left += term(true, cin);
+          double result = left + term(true, cin);
+          if(result < left) throw Errors::Overflow_Or_Underflow();
+          left = result;
           break;
         case Lexer::MINUS:
-          left -= term(true, cin);
+          double result = left - term(true, cin);
+          if(result > left) throw Errors::Overflow_Or_Underflow();
+          left = result;
           break;
         default:
           return left;
@@ -242,7 +244,9 @@ namespace Parser {
     for(;;) {
       switch(Lexer::curr_tok) {
         case Lexer::MUL:
-          left *= prim(true, cin);
+          double right = prim(true, cin);
+          double result = left * right;
+          if(right != 0 && result / right != left) throw Errors::Overflow_Or_Underflow();
           break;
         case Lexer::DIV:
           if (double d = prim(true, cin)) {
@@ -278,6 +282,9 @@ int main() {
     }
     catch(Errors::Syntax_Error error) {
       cout << "Error on line " << Errors::current_line <<": " << error.message << endl;
+    }
+    catch(Errors::Overflow_Or_Underflow) {
+      cout << "Integer Overflow detected!\n";
     }
   }
 
