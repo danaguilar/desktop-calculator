@@ -42,6 +42,13 @@ namespace SymbolTable {
 }
 
 namespace Errors {
+  struct Divide_By_Zero { };
+  struct Syntax_Error {
+    std::string message;
+    Syntax_Error(std::string msg) {
+      message = msg;
+    }
+  };
   int no_of_errors;
   int current_line;
   double error(const string&);
@@ -190,10 +197,10 @@ namespace Parser {
       case Lexer::FNAME:
       {
         pair<vector<string>, string>& function_pair = SymbolTable::function_list[SymbolTable::string_value];
-        if(!get_params()) return Errors::error(") expected");
+        if(!get_params()) throw Errors::Syntax_Error(") expected");
         if (Lexer::get_token(cin) == Lexer::ASSIGN) {
-          if(!begin_function_text()) return Errors::error("{ expected to begin function text");
-          if(!get_function_text()) return Errors::error("} expected");
+          if(!begin_function_text()) throw Errors::Syntax_Error("{ expected to begin function text");
+          if(!get_function_text()) throw Errors::Syntax_Error("} expected");
           function_pair.first = SymbolTable::params;
           function_pair.second = SymbolTable::function_text;
           return 0;
@@ -220,12 +227,12 @@ namespace Parser {
       case Lexer::LP:
       {
         double e = expr(true, cin);
-        if (Lexer::curr_tok != Lexer::RP) return Errors::error(") expected");
+        if (Lexer::curr_tok != Lexer::RP) throw Errors::Syntax_Error(") expected");
         Lexer::get_token(cin);
         return e;
       }
       default:
-      return Errors::error("primary expected");
+        throw Errors::Syntax_Error("primary expected");
     }
   }
 
@@ -242,7 +249,7 @@ namespace Parser {
             left /= d;
             break;
           }
-          return Errors::error("divide by 0");
+          throw Errors::Divide_By_Zero();
         default:
           return left;
       }
@@ -259,11 +266,19 @@ int main() {
   cout << "TERMINAL CALCULATOR\n";
 
   while (cin) {
-    Errors::current_line = 0;
-    Lexer::get_token(&cin); // gets a token from cin
-    if (Lexer::curr_tok == Lexer::END) break; // If the found token is END, break out of the loop
-    if (Lexer::curr_tok == Lexer::PRINT) continue; // If the found token in PRINT, get more input
-    cout << Parser::expr(false, &cin) << '\n'; // Output the expression
+    try {
+      Errors::current_line = 0;
+      Lexer::get_token(&cin); // gets a token from cin
+      if (Lexer::curr_tok == Lexer::END) break; // If the found token is END, break out of the loop
+      if (Lexer::curr_tok == Lexer::PRINT) continue; // If the found token in PRINT, get more input
+      cout << Parser::expr(false, &cin) << '\n'; // Output the expression
+    }
+    catch(Errors::Divide_By_Zero error) {
+      cout << "Error on line " << Errors::current_line <<": Cannot divide by 0\n";
+    }
+    catch(Errors::Syntax_Error error) {
+      cout << "Error on line " << Errors::current_line <<": " << error.message << endl;
+    }
   }
 
   return Errors::no_of_errors;
